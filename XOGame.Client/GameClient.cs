@@ -35,7 +35,9 @@ namespace XOGame.Client
 
         public async Task Send<T>(T packet) where T : GamePacket
         {
-            var buffer = packet.Serialize();
+            ByteWriter writer=new ByteWriter();
+            packet.SerializeRaw(ref writer);
+            var buffer = writer.ToArray();
             await _client.SendAsync(buffer, buffer.Length);
         }
 

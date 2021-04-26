@@ -1,17 +1,29 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using XOGame.Core;
 
 namespace XOGame.Server
 {
+    static class Extensions
+    {
+        public static async Task<UdpReceiveResult> ReceiveAsyncSafe(this UdpClient client)
+        {
+            try
+            {
+                return await client.ReceiveAsync();
+            }
+            catch
+            {
+                return new UdpReceiveResult();
+            }
+        }
+    }
     class Program
     {
-        private static async Task Main(string[] args)
+        private static async Task Main()
         {
             const int listenPort = 11000;
             var userService=new UserService();
@@ -22,19 +34,19 @@ namespace XOGame.Server
             long packetSizeCounter = 0;
             List<IPEndPoint> connectedEndpoints = new List<IPEndPoint>();
 
-            //var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             try
             {
                 Console.WriteLine("Waiting for clients...");
-
                 while (true)
                 {
-                    var result = await listener.ReceiveAsync();
+                    var result = await listener.ReceiveAsyncSafe();
                     var buffer = result.Buffer;
+                    if (buffer == null) continue;
+
                     ++packetCounter;
                     packetSizeCounter += buffer.Length;
                     var packet = PacketDetector.Detect(ref buffer, out var packetType);
-                    if (packetType == 0)
+                    if (packetType == 0|| packet==null)
                     {
                         //invalid packet go home dude
                     }
@@ -42,17 +54,22 @@ namespace XOGame.Server
                     {
                         if (!connectedEndpoints.Contains(result.RemoteEndPoint))
                         {
+                            Console.WriteLine("client connected:{0}", result.RemoteEndPoint);
                             connectedEndpoints.Add(result.RemoteEndPoint);
                         }
 
                         if (packet is ClientPacket clientPacket)
                         {
                             var outgoingPackets = controller.Handle(clientPacket);
+                            ByteWriter writer=new ByteWriter();
                             foreach (var outgoingPacket in outgoingPackets)
                             {
-                                buffer = outgoingPacket.Serialize();
+                                writer.Reset();
+                                outgoingPacket.SerializeRaw(ref writer);
+                                buffer = writer.ToArray();
                                 if (outgoingPacket.IsBroadcast)
                                 {
+                                    //if broadcast then send to all
                                     foreach (var endPoint in connectedEndpoints)
                                     {
                                         await listener.SendAsync(buffer, buffer.Length, endPoint);
@@ -60,6 +77,7 @@ namespace XOGame.Server
                                 }
                                 else
                                 {
+                                    //else direct to sender
                                     await listener.SendAsync(buffer, buffer.Length, result.RemoteEndPoint);
                                 }
                             }

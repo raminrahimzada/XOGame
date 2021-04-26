@@ -1,6 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using XOGame.Client;
 using XOGame.Core;
@@ -14,7 +14,7 @@ namespace XOGame.Launcher
         private Label _labelUsername;
         private Label _labelPassword;
         private Label _labelError;
-        private TextBox textBoxServerIp;
+        private Label labelHeartBeat;
         private TextBox _textBoxPassword;
 
         private void InitializeComponent()
@@ -25,7 +25,7 @@ namespace XOGame.Launcher
             this._labelPassword = new System.Windows.Forms.Label();
             this._textBoxPassword = new System.Windows.Forms.TextBox();
             this._labelError = new System.Windows.Forms.Label();
-            this.textBoxServerIp = new System.Windows.Forms.TextBox();
+            this.labelHeartBeat = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // _textBoxUsername
@@ -79,24 +79,25 @@ namespace XOGame.Launcher
             this._labelError.TabIndex = 2;
             this._labelError.Text = "..........";
             // 
-            // textBoxServerIp
+            // labelHeartBeat
             // 
-            this.textBoxServerIp.Location = new System.Drawing.Point(12, 195);
-            this.textBoxServerIp.Name = "textBoxServerIp";
-            this.textBoxServerIp.Size = new System.Drawing.Size(100, 27);
-            this.textBoxServerIp.TabIndex = 0;
-            this.textBoxServerIp.TextChanged += new System.EventHandler(this.textBoxServerIp_TextChanged);
+            this.labelHeartBeat.AutoSize = true;
+            this.labelHeartBeat.Location = new System.Drawing.Point(12, 177);
+            this.labelHeartBeat.Name = "labelHeartBeat";
+            this.labelHeartBeat.Size = new System.Drawing.Size(39, 20);
+            this.labelHeartBeat.TabIndex = 3;
+            this.labelHeartBeat.Text = "..........";
             // 
             // LoginForm
             // 
             this.AcceptButton = this._buttonLogin;
-            this.ClientSize = new System.Drawing.Size(461, 224);
+            this.ClientSize = new System.Drawing.Size(461, 204);
+            this.Controls.Add(this.labelHeartBeat);
             this.Controls.Add(this._labelError);
             this.Controls.Add(this._labelPassword);
             this.Controls.Add(this._labelUsername);
             this.Controls.Add(this._buttonLogin);
             this.Controls.Add(this._textBoxPassword);
-            this.Controls.Add(this.textBoxServerIp);
             this.Controls.Add(this._textBoxUsername);
             this.DoubleBuffered = true;
             this.Name = "LoginForm";
@@ -107,13 +108,21 @@ namespace XOGame.Launcher
         }
 
         //private readonly GameForm  _nextForm = new GameForm();
-
         public LoginForm()
         {
             InitializeComponent();
             App.PacketReceivedEvent += App_PacketReceivedEvent;
             //textBoxServerIp.Text = Dns.GetHostAddresses("localhost").FirstOrDefault()?.ToString();
-            textBoxServerIp.Text = GameSettings.serverIp;
+            new Thread(HeartBeat) {IsBackground = true}.Start();
+        }
+
+        private async void HeartBeat()
+        {
+            while (true)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+                await App.Client.Send(new HeartbeatPacket(App.Storage.SecretToken));
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -126,6 +135,9 @@ namespace XOGame.Launcher
         {
             switch (packet)
             {
+                case HeartbeatResponsePacket heartbeatResponsePacket:
+                    labelHeartBeat.Text = "Server Time : " + heartbeatResponsePacket.ServerTime.ToString("G");
+                    break;
                 case LoginResponsePacket authPacket:
                     if (authPacket.SecretToken == 0)
                     {
@@ -138,7 +150,6 @@ namespace XOGame.Launcher
                         {
                             new GameForm().Show();
                         }));
-
                         //this.Hide();
                     }
                     break;
@@ -151,12 +162,7 @@ namespace XOGame.Launcher
             var password = _textBoxPassword.Text;
             var packet = new LoginPacket(username, password);
             await App.Client.Send(packet);
-        }
-
-        private void textBoxServerIp_TextChanged(object sender, System.EventArgs e)
-        {
-            GameSettings.serverIp = textBoxServerIp.Text;
-            App.Setup();
+            ClientStorage.Instance.Username = username;
         }
     }
 }

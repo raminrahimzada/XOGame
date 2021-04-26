@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.Security;
 using System.Threading.Tasks;
 using XOGame.Core;
 
@@ -48,7 +47,7 @@ namespace XOGame.Client
                 var password = Console.ReadLine() ?? "";
                 var packet = new LoginPacket(username, password);
                 await App.Client.Send(packet);
-                await App.Client.Send(new StatePacket(App.Storage.SecretToken, 100 - i, 150 + i++));
+                await App.Client.Send(new SetStatePacket(App.Storage.SecretToken, 100 - i, 150 + i++));
             }
         }
 

@@ -22,9 +22,11 @@ namespace XOGame.Server
                 case LoginPacket loginPacket:
                     return Handle(loginPacket);
                 
-                case StatePacket statePacket:
+                case SetStatePacket statePacket:
                     return Handle(statePacket);
-
+                
+                case HeartbeatPacket heartbeatPacket:
+                    return Handle(heartbeatPacket);
                 //server do not need other packets
                 default:
                     return new ServerPacket[0];
@@ -33,11 +35,21 @@ namespace XOGame.Server
 
 
         #region Specific Handlers
-        private   IEnumerable<ServerPacket> Handle(StatePacket packet)
+
+        private IEnumerable<ServerPacket> Handle(HeartbeatPacket packet)
         {
-            _userService.UpdateState(packet);
-            var users = _userService.GetAllUsers();
-            yield return new UserStatesPacket(ref users);
+            yield return new HeartbeatResponsePacket(DateTime.Now);
+        }
+
+        private   IEnumerable<ServerPacket> Handle(SetStatePacket packet)
+        {
+            var user = _userService.Find(packet.SecretToken);
+            if (user != null)
+            {
+                user.PositionX = packet.PositionX;
+                user.PositionY = packet.PositionY;
+                yield return new UserStatePacket(ref user);
+            }
         }
         private IEnumerable<ServerPacket> Handle(LoginPacket packet)
         {
@@ -47,12 +59,10 @@ namespace XOGame.Server
             //if login success
             if (result != 0)
             {
-                var users = _userService.GetAllUsers();
-                yield return new UserStatesPacket(ref users);
+                var user = _userService.Find(resultPacket.SecretToken);
+                yield return new UserStatePacket(ref user);
             }
         }
-        
-
         #endregion
     }
 }

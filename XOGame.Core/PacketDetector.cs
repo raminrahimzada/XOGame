@@ -5,26 +5,38 @@
         public static GamePacket Detect(ref byte[] buffer, out PacketTypes packetType)
         {
             GamePacket packet;
-            packetType = GamePacket.DetectPacket(ref buffer);
+            if (buffer == null || buffer.Length == 0)
+            {
+                packetType = 0;
+                return null;
+            }
+            packetType = (PacketTypes) buffer[0];
             if (packetType == 0) return null;
+
             switch (packetType)
             {
-                case PacketTypes.Login:
+                case PacketTypes.HeartBeat:
+                    packet = HeartbeatPacket.Empty();
+                    break;
+                case PacketTypes.LoginRequest:
                     packet = LoginPacket.Empty();
                     break;
-                case PacketTypes.State:
-                    packet = StatePacket.Empty();
+                case PacketTypes.SetStateRequest:
+                    packet = SetStatePacket.Empty();
                     break;
                 case PacketTypes.LoginResponse:
                     packet = LoginResponsePacket.Empty();
                     break;
-                case PacketTypes.UserStates:
-                    packet = UserStatesPacket.Empty();
+                case PacketTypes.UserStateResponse:
+                    packet = UserStatePacket.Empty();
+                    break;
+                case PacketTypes.HeartBeatResponse:
+                    packet=HeartbeatResponsePacket.Empty();
                     break;
                 default:
                     return null;
             }
-            packet.DeSerializeFrom(ref buffer);
+            packet.DeSerializeRaw(ref buffer);
             return packet;
         }
     }

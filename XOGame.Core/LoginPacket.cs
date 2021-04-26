@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace XOGame.Core
+﻿namespace XOGame.Core
 {
     public  class LoginPacket : ClientPacket
     {
@@ -12,34 +10,20 @@ namespace XOGame.Core
             Username = username;
             Password = password;
         }
-        public override byte[] Serialize()
+
+        protected override void Serialize(ref ByteWriter writer)
         {
-            var writer=new ByteWriter();
-            writer.Write(PacketType);
             writer.Write(Username);
             writer.Write(Password);
-            return writer.ToArray();
         }
-        
-        public override void DeSerializeFrom(ref byte[] buffer)
+
+        protected override void DeSerialize(ref ByteReader reader)
         {
-            if (buffer == null || buffer.Length==0)
-            {
-                throw new Exception("Invalid Buffer for Login Packet");
-            }
-
-            var reader = new ByteReader(ref buffer);
-            var packetType = reader.ReadByte();
-            if (packetType != PacketType)
-            {
-                throw new Exception("Invalid Buffer for Login Packet");
-            }
-
             Username = reader.ReadString();
             Password = reader.ReadString();
         }
 
-        public override byte PacketType => (byte) PacketTypes.Login;
+        public override byte PacketType => (byte) PacketTypes.LoginRequest;
 
         public static LoginPacket Empty()
         {

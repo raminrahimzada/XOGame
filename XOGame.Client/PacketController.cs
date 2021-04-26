@@ -27,7 +27,7 @@ namespace XOGame.Client
                 case LoginResponsePacket authPacket:
                     Handle(ref authPacket);
                     break;
-                case UserStatesPacket usersListPacket:
+                case UserStatePacket usersListPacket:
                     Handle( ref usersListPacket);
                     break;
 
@@ -38,13 +38,10 @@ namespace XOGame.Client
         }
 
        
-        private void Handle(ref UserStatesPacket packet)
+        private void Handle(ref UserStatePacket packet)
         {
-            Console.WriteLine("got users list:");
-            foreach (var user in packet.Users)
-            {
-                Console.WriteLine($"{user.Username} is in ({user.PositionX},{user.PositionY})");
-            }
+            var user = packet.User;
+            Console.WriteLine($"got user {user.Username} is in ({user.PositionX},{user.PositionY})");
         }
         private void Handle(ref LoginResponsePacket packet)
         {

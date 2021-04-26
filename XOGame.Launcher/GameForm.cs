@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using XOGame.Client;
 using XOGame.Core;
@@ -18,22 +14,29 @@ namespace XOGame.Launcher
         private readonly List<UserModel> _users;
         private   int _positionX;
         private   int _positionY;
+        private bool _gameUpdated;
+
+        private const int CircleSize = 50;
+
 
         public GameForm()
         {
             InitializeComponent();
             _users=new List<UserModel>();
-            this.Paint += GameForm_Paint;
-            this.KeyPreview = true;
-            this.KeyDown += GameForm_KeyDown;
-            this.MouseMove += GameForm_MouseMove;
-            this.Load += GameForm_Load;
-            this.Click += GameForm_Click;
+            Paint += GameForm_Paint;
+            KeyPreview = true;
+            KeyDown += GameForm_KeyDown;
+            MouseMove += GameForm_MouseMove;
+            Load += GameForm_Load;
+            Click += GameForm_Click;
             App.PacketReceivedEvent += App_PacketReceivedEvent;
         }
 
+        //public override string Text => "User : " + ClientStorage.Instance.Username;
+
         private void GameForm_Load(object sender, EventArgs e)
         {
+            this.Text = "User : " + ClientStorage.Instance.Username;
             new Thread(SendStateToServer)
             {
                 IsBackground = true
@@ -52,7 +55,7 @@ namespace XOGame.Launcher
             //this.Invalidate();
         }
 
-        private bool _gameUpdated = false;
+        
 
         private void GameForm_KeyDown(object sender, KeyEventArgs e)
         {
@@ -78,7 +81,7 @@ namespace XOGame.Launcher
                 _gameUpdated = true;
             }
 
-            this.Invalidate();
+            Invalidate();
         }
 
         protected override void Dispose(bool disposing)
@@ -96,13 +99,13 @@ namespace XOGame.Launcher
             bool renderAgain = false;
             switch (packet)
             {
-                case UserStatesPacket usersListPacket:
+                case UserStatePacket usersListPacket:
                     renderAgain=UpdateUsersPositions(ref usersListPacket);                    
                     break;
             }
 
-            if (renderAgain && this.IsHandleCreated)
-                this.BeginInvoke(new MethodInvoker(this.Invalidate));
+            if (renderAgain && IsHandleCreated)
+                BeginInvoke(new MethodInvoker(Invalidate));
         }
 
         public async void SendStateToServer()
@@ -114,30 +117,30 @@ namespace XOGame.Launcher
                 if (_gameUpdated)
                 {
                     _gameUpdated = false;
-                    await App.Client.Send(new StatePacket(App.Storage.SecretToken, _positionX, _positionY));
+                    await App.Client.Send(new SetStatePacket(App.Storage.SecretToken, _positionX, _positionY));
                 }
             }
+            // ReSharper disable once FunctionNeverReturns
         }
 
-        private const int circleSize = 50;
         private void GameForm_Paint(object sender, PaintEventArgs e)
         {
             Pen pen = new Pen(new SolidBrush(Color.Green));
             foreach (var user in _users)
             {
-                Rectangle rect = new Rectangle(user.PositionX, user.PositionY, circleSize, circleSize);
+                Rectangle rect = new Rectangle(user.PositionX, user.PositionY, CircleSize, CircleSize);
                 e.Graphics.DrawArc(pen, rect, 0, 360);
-                Font font=this.Font;
+                Font font=Font;
                 PointF point = new PointF(user.PositionX, user.PositionY);
                 e.Graphics.DrawString(user.Username,font,pen.Brush,point);
             }
         }
- 
 
-        private bool UpdateUsersPositions(ref UserStatesPacket packet)
+        private bool UpdateUsersPositions(ref UserStatePacket packet)
         {
             bool changed = false;
-            foreach (var u in packet.Users)
+            //foreach (var u in packet.Users)
+            var u = packet.User;
             {
                 var user = _users.FirstOrDefault(x => x.Username == u.Username);
                 if (user != null)

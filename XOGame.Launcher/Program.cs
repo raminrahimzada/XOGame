@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using XOGame.Client;
 
@@ -16,7 +13,7 @@ namespace XOGame.Launcher
         static void Main()
         {
             App.Setup();
-
+            Control.CheckForIllegalCrossThreadCalls = false;
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

@@ -2,9 +2,11 @@
 {
     public enum PacketTypes : byte
     {
-        Login = 1,
+        LoginRequest = 1,
         LoginResponse=2,
-        UserStates=3,
-        State=4,
+        UserStateResponse=3,
+        SetStateRequest=4,
+        HeartBeat=5,
+        HeartBeatResponse=6
     }
 }

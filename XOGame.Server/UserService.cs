@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using XOGame.Core;
 
@@ -40,11 +39,10 @@ namespace XOGame.Server
         private int GenerateNewSecretToken()
         {
             int secretToken = RandomHelper.RandomInteger();
-            while (_users.Any(x=>x.SecretToken==secretToken))
+            while (_users.Any(x => x.SecretToken == secretToken))
             {
                 secretToken = RandomHelper.RandomInteger();
             }
-
             return secretToken;
         }
 
@@ -53,18 +51,10 @@ namespace XOGame.Server
             return _users.ToArray();
         }
 
-        public void UpdateState(StatePacket packet)
+
+        public UserModel Find(int secretToken)
         {
-            var user = _users.FirstOrDefault(x => x.SecretToken == packet.SecretToken);
-            if (user!=null)
-            {
-                user.PositionX = packet.PositionX;
-                user.PositionY = packet.PositionY;
-            }
-            else
-            {
-                //invalid secret token,someone using brute force maybe
-            }
+            return _users.FirstOrDefault(x => x.SecretToken == secretToken);
         }
     }
 }

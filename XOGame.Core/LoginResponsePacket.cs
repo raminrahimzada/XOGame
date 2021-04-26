@@ -1,15 +1,10 @@
-﻿using System.Linq;
-
-namespace XOGame.Core
+﻿namespace XOGame.Core
 {
     public class LoginResponsePacket : ServerPacket
     {
         public int SecretToken { get; private set; }
 
-        public LoginResponsePacket()
-        {
-            
-        }
+         
         public LoginResponsePacket(int secretToken)
         {
             SecretToken = secretToken;
@@ -17,18 +12,13 @@ namespace XOGame.Core
 
         public override bool IsBroadcast => false;
 
-        public override byte[] Serialize()
+        protected override void Serialize(ref ByteWriter writer)
         {
-           var writer=new ByteWriter();
-           writer.Write(PacketType);
-           writer.Write(SecretToken);
-           return writer.ToArray();
+            writer.Write(SecretToken);
         }
 
-        public override void DeSerializeFrom(ref byte[] buffer)
+        protected override void DeSerialize(ref ByteReader reader)
         {
-            var reader = new ByteReader(ref buffer);
-            var packetType = reader.ReadByte();
             SecretToken = reader.ReadInt();
         }
 

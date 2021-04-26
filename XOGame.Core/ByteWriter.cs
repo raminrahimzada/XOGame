@@ -27,6 +27,14 @@ namespace XOGame.Core
                 _list.AddLast(b);
             }
         }
+        public void Write(long i)
+        {
+            var data = BitConverter.GetBytes(i);
+            foreach (var b in data)
+            {
+                _list.AddLast(b);
+            }
+        }
 
         public void Write(string s)
         {
@@ -42,6 +50,16 @@ namespace XOGame.Core
         public byte[] ToArray()
         {
             return _list.ToArray();
+        }
+
+        public void Reset()
+        {
+            _list.Clear();
+        }
+
+        public void Write(in DateTime dt)
+        {
+            Write(dt.Ticks);
         }
     }
 }
